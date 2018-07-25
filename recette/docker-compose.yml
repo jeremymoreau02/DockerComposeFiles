@@ -1,0 +1,49 @@
+version: '2.1'
+services:
+  data:
+    image: tianon/true
+    volumes:
+      - data:/var/lib/mysql
+
+  mysql:
+    image: mysql:5.6
+    ports:
+      - 3306:3306
+    volumes:
+      - data:/var/lib/mysql
+    depends_on:
+      - data
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=mimir02
+      - MYSQL_PASSWORD=virgule02
+      - MYSQL_DATABASE=todosappdb
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  api:
+    image: mimir02/nodedevopsapi:docker-recette
+    ports:
+      - 3000:3000
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  applidev:
+    image: mimir02/applinodedevops:recette
+    ports:
+      - 8080:8080
+    depends_on:
+      - api
+    command: >
+      bash -c "kill -USR1 1 && service apache2 restart
+      && tail -f /dev/null"
+
+volumes:
+  data:
+    driver: local-persist
+    driver_opts:
+      mountpoint: /home/jeremy/Documents/persistDir
+  
